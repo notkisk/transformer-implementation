@@ -1,7 +1,14 @@
 [project]
 name = "full-transformer-implementation"
 version = "0.1.0"
-description = "Add your description here"
+description = "Attention is All You Need paper Implementation"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "torch",
+    "datasets",
+    "tokenizers",
+    "torchmetrics",
+    "tqdm",
+    "tensorboard",
+]
