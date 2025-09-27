@@ -2,7 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from config import get_config
+import sys
+import os
+
+# Try to import config with proper path handling
+try:
+    # Add parent directory to path to access config module
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if root_dir not in sys.path:
+        sys.path.insert(0, root_dir)
+    from config.config import get_config
+except ImportError:
+    # Fallback for different execution contexts
+    from config import get_config
 
 
 config = get_config()
