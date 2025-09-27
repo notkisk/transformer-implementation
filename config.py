@@ -2,7 +2,7 @@ from pathlib import Path
 
 def get_config():
     return {
-        "batch_size": 4,
+        "batch_size": 32,
         "num_epochs": 20,
         "lr": 10**-4,
         "seq_len": 350,
@@ -22,7 +22,6 @@ def get_weights_file_path(config, epoch: str):
     model_filename = f"{config['model_basename']}{epoch}.pt"
     return str(Path('.') / model_folder / model_filename)
 
-# Find the latest weights file in the weights folder
 def latest_weights_file_path(config):
     model_folder = f"{config['datasource']}_{config['model_folder']}"
     model_filename = f"{config['model_basename']}*"
