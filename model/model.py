@@ -5,21 +5,22 @@ import math
 import sys
 import os
 
-# Try to import config with proper path handling
 try:
-    # Add parent directory to path to access config module
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if root_dir not in sys.path:
         sys.path.insert(0, root_dir)
     from config.config import get_config
 except ImportError:
-    # Fallback for different execution contexts
     from config import get_config
 
 
 config = get_config()
 
+
 class LayerNormalization(nn.Module):
+    """
+    its probably more effecient to use the built in layer norm provided by pytorch. this implementation is only for educational purposes
+    """
     def __init__(self, d_model: int, eps: float = 1e-6):
         super().__init__()
         self.d_model = d_model
@@ -71,7 +72,7 @@ class PositionalEncoding(nn.Module):
         #XXX: this implementation is numirically unstable because dividing by a very big number (10000**...) 
         pe = torch.zeros(seq_len, d_model, dtype=torch.float32)
         positions = torch.arange(0, seq_len, dtype=torch.float32).unsqueeze(1)
-        # Compute the division term which is 10000^(2i/d_model)
+        # compute the division term which is 10000^(2i/d_model)
         div_term = 10000 ** (torch.arange(0, d_model, 2).float() / d_model)
         # Apply sin to even indices in the array; 2i
         # So for the div term, it moves like div_term[0:d_model:2] or just div_term[::2]
@@ -89,9 +90,8 @@ class MultiHeadAttentionBlock(nn.Module):
 
     def __init__(self, d_model: int, h: int, dropout: float) -> None:
         super().__init__()
-        self.d_model = d_model # Embedding vector size
+        self.d_model = d_model # Token Embedding vector size
         self.h = h # Number of heads
-        # Make sure d_model is divisible by h
         assert d_model % h == 0, "d_model is not divisible by h"
 
         self.d_k = d_model // h # Dimension of vector seen by each head
@@ -127,10 +127,9 @@ class MultiHeadAttentionBlock(nn.Module):
         key = key.view(key.shape[0], key.shape[1], self.h, self.d_k).transpose(1, 2)
         value = value.view(value.shape[0], value.shape[1], self.h, self.d_k).transpose(1, 2)
 
-        # Calculate attention
         x, self.attention_scores = MultiHeadAttentionBlock.attention(query, key, value, mask, self.dropout)
         
-        # Combine all the heads together
+        # combine all the heads together
         # (batch, h, seq_len, d_k) --> (batch, seq_len, h, d_k) --> (batch, seq_len, d_model)
         x = x.transpose(1, 2).contiguous().view(x.shape[0], -1, self.h * self.d_k)
 
@@ -239,7 +238,6 @@ class Transformer(nn.Module):
         return self.projection_layer(x)
     
 def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int, tgt_seq_len: int, d_model: int=512, N: int=6, h: int=8, dropout: float=0.1, d_ff: int=2048) -> Transformer:
-    # Create the embedding layers
     src_embed = InputEmbeddings(d_model, src_vocab_size)
     tgt_embed = InputEmbeddings(d_model, tgt_vocab_size)
 
@@ -247,7 +245,6 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
     src_pos = PositionalEncoding(d_model, src_seq_len, dropout)
     tgt_pos = PositionalEncoding(d_model, tgt_seq_len, dropout)
     
-    # Create the encoder blocks
     encoder_blocks = []
     for _ in range(N):
         encoder_self_attention_block = MultiHeadAttentionBlock(d_model, h, dropout)
@@ -255,7 +252,6 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
         encoder_block = EncoderBlock(encoder_self_attention_block, feed_forward_block, dropout)
         encoder_blocks.append(encoder_block)
 
-    # Create the decoder blocks
     decoder_blocks = []
     for _ in range(N):
         decoder_self_attention_block = MultiHeadAttentionBlock(d_model, h, dropout)
@@ -264,17 +260,14 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
         decoder_block = DecoderBlock(decoder_self_attention_block, decoder_cross_attention_block, feed_forward_block, dropout)
         decoder_blocks.append(decoder_block)
     
-    # Create the encoder and decoder
     encoder = Encoder(nn.ModuleList(encoder_blocks))
     decoder = Decoder(nn.ModuleList(decoder_blocks))
     
-    # Create the projection layer
     projection_layer = LinearProjection(d_model, tgt_vocab_size)
     
-    # Create the transformer
     transformer = Transformer(encoder, decoder, src_embed, tgt_embed, src_pos, tgt_pos, projection_layer)
     
-    # Initialize the parameters
+    # initialize the parameters, skip biases as they are merly shifting terms unlike weights which are scaling terms(wx + b) 
     for p in transformer.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)

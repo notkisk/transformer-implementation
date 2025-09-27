@@ -8,7 +8,7 @@ the paper's key insight was that attention mechanisms could capture long-range d
 
 ## implementation timeline and development
 
-### phase 1: foundational architecture (weeks 1-2)
+### phase 1: foundational architecture
 
 the first phase focused on building the core components described in the paper. following the architecture diagram precisely, we implemented each component to match the mathematical formulations from the paper.
 
@@ -28,7 +28,7 @@ pe(pos, 2i) = sin(pos / 10000^(2i/d_model))
 pe(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
 ```
 
-### phase 2: encoder-decoder framework (weeks 2-3)
+### phase 2: encoder-decoder framework
 
 built the encoder consisting of 6 identical layers, each with:
 - multi-head self-attention sub-layer
@@ -42,7 +42,7 @@ each sub-layer used residual connections followed by layer normalization:
 output = layer_norm(x + sublayer(x))
 ```
 
-### phase 3: training pipeline (weeks 3-4)
+### phase 3: training pipeline
 
 implemented the complete training loop including:
 - data preprocessing with tokenizer integration
@@ -51,7 +51,7 @@ implemented the complete training loop including:
 - label smoothing for improved generalization
 - learning rate scheduling with warm-up phase
 
-### phase 4: optimization and validation (weeks 4-5)
+### phase 4: optimization and validation
 
 added mixed precision training, gradient clipping, and comprehensive testing to validate the implementation against the paper's specifications.
 
@@ -130,59 +130,6 @@ critical for proper training:
 - **look-ahead mask**: prevents decoder from attending to future tokens during training
 - **causal mask**: implemented as upper triangular matrix where all values above diagonal are zero
 
-## configuration validation
-
-to ensure the implementation matches the paper's specifications and to catch common mistakes, we implemented comprehensive configuration validation in `config_validation.py`:
-
-this module provides validation functions to check that the configuration parameters align with those specified in the original paper:
-
-- validates that d_model is positive and divisible by the number of attention heads
-- checks that the number of encoder/decoder layers matches the paper's specification (6)
-- verifies that d_model is divisible by the number of attention heads
-- warns if sequence length exceeds recommended values for positional encodings
-- validates learning rate schedule parameters
-- provides detailed error messages for invalid configurations
-
-usage:
-```python
-from config_validation import validate_and_get_config
-
-config = validate_and_get_config()  # Gets and validates the configuration
-```
-
-## model verification tests
-
-comprehensive validation ensures the implementation matches the paper's architecture, implemented in `model_verification.py`:
-
-this module provides several verification functions:
-
-- `verify_model_implementation()`: verifies that all architectural components from the paper are present
-- `test_attention_mechanism()`: tests the multi-head attention mechanism
-- `test_scaled_dot_product()`: validates the core attention formula
-- `run_all_verification_tests()`: runs all verification tests in one call
-
-the verification tests check:
-- proper number of encoder and decoder layers (6 each as per paper)
-- presence of positional encoding components
-- existence of multi-head attention mechanisms
-- implementation of feed-forward networks
-- presence of layer normalization
-- proper residual connections
-- correct dimensional constraints
-
-usage:
-```python
-from model_verification import run_all_verification_tests
-
-# Run all verification tests
-success = run_all_verification_tests()
-
-if success:
-    print("all verification tests passed!")
-else:
-    print("some verification tests failed!")
-```
-
 ## implementation observations and insights
 
 ### numerical stability
@@ -200,7 +147,7 @@ the multi-head attention mechanism allows for parallel computation of different 
 
 ### gradient flow
 
-residual connections and layer normalization enable stable gradient flow through the deep network. without these, training would be much more difficult.
+residual connections and layer normalization enable stable gradient flow through the deep network. without these, training would be much more difficult(causes gradient vanishing).
 
 ### attention patterns
 
@@ -216,8 +163,6 @@ implementing the transformer from scratch reinforced several fundamental concept
 
 3. **architecture modularity**: the repeated layers with consistent patterns (sublayer → residual connection → normalization) make the architecture both elegant and practical.
 
-4. **masking complexity**: proper attention masking is crucial for maintaining the auto-regressive property in the decoder, requiring careful handling of padding and causal constraints.
-
-5. **positional encoding effectiveness**: sinusoidal positional encodings allow the model to learn to attend to relative positions, which is difficult with learned positional embeddings.
+4. **positional encoding effectiveness**: sinusoidal positional encodings allow the model to learn to attend to relative positions, which is difficult with learned positional embeddings.
 
 this implementation faithfully reproduces the original "attention is all you need" architecture while adding modern engineering practices for robustness and maintainability. the model provides a solid foundation for understanding how attention mechanisms work and serves as a reference implementation for the revolutionary architecture that changed deep learning.
