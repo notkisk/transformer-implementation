@@ -63,13 +63,17 @@ class InputEmbeddings(nn.Module):
         return self.embedding(x) * math.sqrt(self.d_model)
     
 
+
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model : int , seq_len : int, dropout : float):
         super().__init__()
         self.d_model = d_model
         self.seq_len = seq_len
         self.dropout = nn.Dropout(dropout)
-        #XXX: this implementation is numirically unstable because dividing by a very big number (10000**...) 
+        # XXX: this implementation can be numerically unstable for very large d_model values
+        # because computing 10000^(2i/d_model) directly can cause overflow (eg: d_model = 4096, for i = 4000, the div term will be 10000^(2*4000/4096) which results in overflow error)
+        # a more stable approach uses logarithms: div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe = torch.zeros(seq_len, d_model, dtype=torch.float32)
         positions = torch.arange(0, seq_len, dtype=torch.float32).unsqueeze(1)
         # compute the division term which is 10000^(2i/d_model)
@@ -80,9 +84,9 @@ class PositionalEncoding(nn.Module):
         pe[:,::2] = torch.sin(positions / div_term)
         pe[:,1::2] = torch.cos(positions / div_term)
 
-        self.register_buffer('pe', pe.unsqueeze(0)) # shape (1, seq_len, d_model), we unsqueze because later, this will take input of size (batch_size, sequence_length, d_model), to account for that we add a new dimention to avoid broadcasting error
+        self.register_buffer('pe', pe.unsqueeze(0)) # shape (1, seq_len, d_model), we unsqueeze because later, this will take input of size (batch_size, sequence_length, d_model), to account for that we add a new dimension to avoid broadcasting error
     def forward(self, x):
-        x= x + (self.pe[:, :x.shape[1], :]).requires_grad_(False)
+        x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)
         
 
