@@ -11,4 +11,5 @@ dependencies = [
     "torchmetrics",
     "tqdm",
     "tensorboard",
+    "psutil>=7.1.0",
 ]
